@@ -12,6 +12,6 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 argparse = "*"
-g910 = { git = "https://github.com/oberien/logitech-g910-rs" }
-g910_handler = { git = "https://github.com/oberien/logitech-g910-handler-rs" }
+g910 = { git = "https://github.com/oberien/logitech-g910-rs", rev = "master"}
+g910_handler = { git = "https://github.com/oberien/logitech-g910-handler-rs", rev = "master" }
 
