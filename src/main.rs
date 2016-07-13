@@ -2,15 +2,17 @@ extern crate argparse;
 extern crate g910;
 extern crate g910_handler;
 
+use std::io::Write;
 use argparse::{ArgumentParser, StoreTrue};
-use g910::Keyboard;
-use g910_handler::{FlashHandler, UinputHandler, FlashHandler, Snake};
+use g910::{KeyboardImpl, Keyboard};
+use g910_handler::{FlashHandler, UinputHandler, HeatmapHandler, Snake};
 
 fn main() {
     let mut use_flash_handler = false;
     let mut use_uinput_handler = false;
     let mut use_heatmap_handler = false;
     let mut use_snake = false;
+    let mut handle_signals = false;
     {
         let mut ap = ArgumentParser::new();
         ap.set_description("Logitech G910");
@@ -26,16 +28,23 @@ fn main() {
         ap.refer(&mut use_snake)
             .add_option(&["-s", "--snake"], StoreTrue,
             "Play Snake");
+        ap.refer(&mut handle_signals)
+            .add_option(&["--signals"], StoreTrue,
+            "React to system signals (SIGINT, SIGTERM)");
+        ap.parse_args_or_exit();
     }
 
     if !use_flash_handler && !use_uinput_handler && !use_heatmap_handler && !use_snake {
         print!("No handler selected. Is this correct? [Y/n]: ");
-        let line = ::std::io::stdin().read_line().unwrap().to_lowercase();
-        if line != "\n" || line != "y\n" || line != "yes\n" {
+        ::std::io::stdout().flush().unwrap();
+        let mut line = String::new();
+        ::std::io::stdin().read_line(&mut line).unwrap();
+        line = line.to_lowercase();
+        if line != "\n" && line != "y\n" && line != "yes\n" {
             ::std::process::exit(0);
         }
     }
-    let mut keyboard = Keyboard::new();
+    let mut keyboard = KeyboardImpl::new().unwrap();
     if use_flash_handler {
         keyboard.add_handler(FlashHandler::new().into());
     }
@@ -48,5 +57,8 @@ fn main() {
     if use_snake {
         keyboard.add_handler(Snake::new().into());
     }
-    keyboard.start_handle_loop();
+    if handle_signals {
+        unsafe { keyboard.enable_signal_handling().unwrap() };
+    }
+    keyboard.start_handle_loop().unwrap();
 }
